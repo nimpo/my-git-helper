@@ -1,0 +1,26 @@
+#!/bin/bash
+# Place me in $HOME/bin/my-helper
+# Run:
+#   chmod 0700 $HOME/bin/my-helper
+#   git config --global credential.helper $HOME/bin/my-helper
+#   git config --global credential.useHttpPath true
+# Create a .my-git-credentials file (like a .git-credentials file) with entries like:
+# https://myuser:github_pat_UGxhY2UgeW91ciBQQVQgY29kZSBoZXJlIG9idnMgbm90IGxpa2UgdGhpcwo@github.com/FooBarOrg/
+
+while IFS='=' read -r key value; do
+    case "$key" in
+        protocol) protocol="$value" ;;
+        host) host="$value" ;;
+        path) path="$value" ;;
+    esac
+done
+
+while read line 
+do 
+  searchpath=`echo "$line" |sed -e "s|^$protocol://[^:]*:[^@]*@$host/||"`
+  if echo "$path" |grep -q "^$searchpath"
+  then
+    echo username=`echo "$line" |sed -e "s|^$protocol://\([^:]*\):[^@]*@$host/.*|\1|"`
+    echo password=`echo "$line" |sed -e "s|^$protocol://[^:]*:\([^@]*\)@$host/.*|\1|"`
+  fi
+done < <( grep "^$protocol://[^:]*:[^@]*@$host/" $HOME/.my-git-credentials )
